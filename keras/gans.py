@@ -19,7 +19,7 @@ import os
 import cv2
 import time
 
-batch_size = 4
+batch_size = 32
 epochs = 4
 num_steps = 2000
 coding_size = 30
@@ -47,9 +47,10 @@ def dataset_tfrecords(tfrecords_path,use_keras_fit=True):
     dataset = tf.data.TFRecordDataset([tfrecords_path])#这个可以有多个组成[tfrecords_name1,tfrecords_name2,...],可以用os.listdir(tfrecords_path):
     dataset = dataset\
                 .repeat(epochs_data)\
+                .shuffle(1000)\#注意一定要将shuffle放在batch前
                 .batch(batch_size)\
-                .map(load_image,num_parallel_calls = 2)\
-                .shuffle(1000)
+                .map(load_image,num_parallel_calls = 8)
+                
 
     iter = dataset.make_one_shot_iterator()#make_initialization_iterator
     train_datas = iter.get_next() #用train_datas[0],[1]的方式得到值

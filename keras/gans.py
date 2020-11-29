@@ -52,7 +52,7 @@ def dataset_tfrecords(tfrecords_path,use_keras_fit=True):
                 .map(load_image,num_parallel_calls = 8)
                 
 
-    iter = dataset.make_one_shot_iterator()#make_initialization_iterator
+    iter = dataset.make_initializable_iterator()#make_one_shot_iterator()
     train_datas = iter.get_next() #用train_datas[0],[1]的方式得到值
     return train_datas,iter
 
@@ -170,52 +170,54 @@ def training_keras():
     #train_datas = read_and_decode(tfrecords_path)
     train_datas,iter = dataset_tfrecords(tfrecords_path,use_keras_fit=False)
     
-    #sess = tf.Session()
-    #sess.run(iter.initializer)
+    sess = tf.Session()
+    sess.run(iter.initializer)
     
     generator,discriminator = gan.layers
     print("-----------------start---------------")
-    sess = tf.Session()
     for step in range(num_steps):
-        #get the time
-        start_time = time.time()
-        #phase 1 - training the discriminator
-        noise = np.random.normal(size=batch_size*coding_size).reshape([batch_size,coding_size])
-        noise = np.cast[np.float32](noise)
-        generated_images = generator.predict(noise)
-        train_datas_ = sess.run(train_datas)
-        x_fake_and_real = np.concatenate([generated_images,train_datas_[0]],axis = 0)#np.concatenate
-        #千万不能再循环体内用tf.concat,不能用tf相关的函数在循环体内定义
-        #否则内存会被耗尽，而且训练速度越来越慢
-        y1 = np.array([[0.]]*batch_size+[[1.]]*len(train_datas_[0]))
-        discriminator.trainable = True
-        dis_loss = discriminator.train_on_batch(x_fake_and_real,y1)
-        #将keras 的train_on_batch函数放在gan网络中是明智之举
-        #phase 2 - training the generator
-        noise = np.random.normal(size=batch_size*coding_size).reshape([batch_size,coding_size])
-        noise = np.cast[np.float32](noise)
-        y2 = np.array([[1.]]*batch_size)
-        discriminator.trainable = False
-        ad_loss = gan.train_on_batch(noise,y2)
-        duration = time.time()-start_time
-        if step % 5 == 0:
-            #gan.save_weights('gan.h5')
-            print("The step is %d,discriminator loss:%.3f,adversarial loss:%.3f"%(step,dis_loss,ad_loss),end=' ')
-            print('%.2f s/step'%(duration))
-        if step % 30 == 0 and step != 0:
-            noise = np.random.normal(size=[1,coding_size])
+        try:
+            #get the time
+            start_time = time.time()
+            #phase 1 - training the discriminator
+            noise = np.random.normal(size=batch_size*coding_size).reshape([batch_size,coding_size])
             noise = np.cast[np.float32](noise)
-            fake_image = generator.predict(noise,steps=1)
-            #复原图像
-            #1.乘以255后需要映射成uint8的类型
-            #2.也可以保持[0,1]的float32类型，依然可以直接输出
-            arr_img = np.array([fake_image],np.float32).reshape([224,224,3])*255
-            arr_img = np.cast[np.uint8](arr_img)
-            #保存为tfrecords用的是PIL.Image,即打开为RGB，所以在用cv显示时需要转换为BGR
-            arr_img = cv2.cvtColor(arr_img,cv2.COLOR_RGB2BGR)
-            cv2.imshow('fake image',arr_img)
-            cv2.waitKey(1500)#show the fake image 1.5s
-            cv2.destroyAllWindows()
+            generated_images = generator.predict(noise)
+            train_datas_ = sess.run(train_datas)
+            x_fake_and_real = np.concatenate([generated_images,train_datas_[0]],axis = 0)#np.concatenate
+            #千万不能再循环体内用tf.concat,不能用tf相关的函数在循环体内定义
+            #否则内存会被耗尽，而且训练速度越来越慢
+            y1 = np.array([[0.]]*batch_size+[[1.]]*len(train_datas_[0]))
+            discriminator.trainable = True
+            dis_loss = discriminator.train_on_batch(x_fake_and_real,y1)
+            #将keras 的train_on_batch函数放在gan网络中是明智之举
+            #phase 2 - training the generator
+            noise = np.random.normal(size=batch_size*coding_size).reshape([batch_size,coding_size])
+            noise = np.cast[np.float32](noise)
+            y2 = np.array([[1.]]*batch_size)
+            discriminator.trainable = False
+            ad_loss = gan.train_on_batch(noise,y2)
+            duration = time.time()-start_time
+            if step % 5 == 0:
+                #gan.save_weights('gan.h5')
+                print("The step is %d,discriminator loss:%.3f,adversarial loss:%.3f"%(step,dis_loss,ad_loss),end=' ')
+                print('%.2f s/step'%(duration))
+            if step % 30 == 0 and step != 0:
+                noise = np.random.normal(size=[1,coding_size])
+                noise = np.cast[np.float32](noise)
+                fake_image = generator.predict(noise,steps=1)
+                #复原图像
+                #1.乘以255后需要映射成uint8的类型
+                #2.也可以保持[0,1]的float32类型，依然可以直接输出
+                arr_img = np.array([fake_image],np.float32).reshape([224,224,3])*255
+                arr_img = np.cast[np.uint8](arr_img)
+                #保存为tfrecords用的是PIL.Image,即打开为RGB，所以在用cv显示时需要转换为BGR
+                arr_img = cv2.cvtColor(arr_img,cv2.COLOR_RGB2BGR)
+                cv2.imshow('fake image',arr_img)
+                cv2.waitKey(1500)#show the fake image 1.5s
+                cv2.destroyAllWindows()
+        except tf.errors.OutOfRangeError: 
+            sess.run(iter.initializer)
             
     #save the models 
     model_vision = '0001'

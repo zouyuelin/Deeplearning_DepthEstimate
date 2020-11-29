@@ -219,11 +219,14 @@ def training_keras():
         except tf.errors.OutOfRangeError: 
             sess.run(iter.initializer)
             
-    #save the models 
+    #save the models tf2.0版本使用
     model_vision = '0001'
     model_name = 'gans'
     model_path = os.path.join(model_name,model_name)
     tf.saved_model.save(gan,model_path)
+    #save the models 
+    model_vision = '0001'
+    gan.save_weights(model_vision)
     
 def main():
     training_keras()

@@ -186,7 +186,7 @@ def training_keras():
         x_fake_and_real = np.concatenate([generated_images,train_datas_[0]],axis = 0)#np.concatenate
         #千万不能再循环体内用tf.concat,不能用tf相关的函数在循环体内定义
         #否则内存会被耗尽，而且训练速度越来越慢
-        y1 = np.array([[0.]]*batch_size+[[1.]]*batch_size)
+        y1 = np.array([[0.]]*batch_size+[[1.]]*len(train_datas_[0]))
         discriminator.trainable = True
         dis_loss = discriminator.train_on_batch(x_fake_and_real,y1)
         #将keras 的train_on_batch函数放在gan网络中是明智之举

@@ -172,6 +172,9 @@ def training_keras():
     
     sess = tf.Session()
     sess.run(iter.initializer)
+    #如果使用read_and_decode读取数据，需要使用以下代码打开线程协调器
+    coord = tf.train.Coordinator()
+    threads = tf.train.start_queue_runners(sess=sess,coord=coord)
     
     generator,discriminator = gan.layers
     print("-----------------start---------------")
@@ -218,7 +221,11 @@ def training_keras():
                 cv2.destroyAllWindows()
         except tf.errors.OutOfRangeError: 
             sess.run(iter.initializer)
-            
+    
+    #关闭线程协调器
+    #coord.request_stop()
+    #coord.join(threads)
+    
     #save the models tf2.0版本使用
     model_vision = '0001'
     model_name = 'gans'

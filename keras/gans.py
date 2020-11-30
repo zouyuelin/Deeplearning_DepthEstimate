@@ -223,8 +223,8 @@ def training_keras():
             sess.run(iter.initializer)
     
     #关闭线程协调器
-    #coord.request_stop()
-    #coord.join(threads)
+    coord.request_stop()
+    coord.join(threads)
     
     #save the models tf2.0版本使用
     model_vision = '0001'

@@ -110,7 +110,7 @@ def load_image(serialized_example):
     return image,label
  
 def dataset_tfrecords(tfrecords_path,use_keras_fit=True): 
-    #是否使用tf.keras
+    #是否使用tf.keras fit函数
     if use_keras_fit:
         epochs_data = 1
     else:
@@ -446,10 +446,10 @@ def main():
             #        set the num of n_batch          |
             #-----------------------------------------
             #\\
-            if g_loss >= 5.:
+            if g_loss >= 10.:
                 n_generate = 5
                 n_critic = 1
-            elif g_loss <= -5.:
+            elif g_loss <= -10.:
                 n_generate = 1
                 n_critic = 1
             

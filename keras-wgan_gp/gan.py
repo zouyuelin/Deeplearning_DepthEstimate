@@ -74,7 +74,7 @@ def create_tfrecords():
         img_raw=img.tobytes()
         
         '''
-            it is on my datasets, please delete 74-75 codes! 
+            it is on my datasets, please delete these(line 80-83 ) codes! 
         '''
         
         if 'cat' in index:

@@ -445,7 +445,7 @@ def main():
             #-----------------------------------------
             #\\
             if g_loss >= 10.:
-                n_generate = 5
+                n_generate = 1
                 n_critic = 1
             elif g_loss <= -10.:
                 n_generate = 1

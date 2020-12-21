@@ -84,7 +84,7 @@ def create_tfrecords():
                 'img_raw': tf.train.Feature(bytes_list=tf.train.BytesList(value=[img_raw]))
                 }))
         writer_train.write(example.SerializeToString())  #序列化为字符串
-        sys.stdout.write('--------%.4f%%-----'%(num_i/float(num)))
+        sys.stdout.write('--------%.4f%%-----'%(num_i/float(num)*100))
         sys.stdout.write('%\r')
         sys.stdout.flush()
         num_i = num_i +1

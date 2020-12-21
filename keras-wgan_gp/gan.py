@@ -89,6 +89,8 @@ def create_tfrecords():
         sys.stdout.flush()
         num_i = num_i +1
     print('-------------------------------datasets has completed-----------------------------------')
+    global data_num
+    data_num = num_i
     writer_train.close()
 
     
@@ -443,7 +445,8 @@ def main():
             #-----------------------------------------
             #        set the num of n_batch          |
             #-----------------------------------------
-            #\\
+            #\\you can change them if you want g or d become more stronger when
+            #\\the loss turns to be abnormal
             if g_loss >= 10.:
                 n_generate = 1
                 n_critic = 1

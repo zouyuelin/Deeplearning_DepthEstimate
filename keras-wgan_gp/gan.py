@@ -36,8 +36,6 @@ tf.app.flags.DEFINE_string(
     'type', 'gp', 'what is the type?.')
 FLAGS = tf.app.flags.FLAGS
 
-if(FLAGS.data == None):
-    os._exit(0)
 if not os.path.exists('data'):
     os.mkdir('data')
 if not os.path.exists('image'):

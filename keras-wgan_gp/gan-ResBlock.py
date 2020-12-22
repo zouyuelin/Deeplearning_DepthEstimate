@@ -187,7 +187,7 @@ def IdentifyBlock(x, num_filters):
     x = keras.layers.Activation('relu')(x)
     
     #//cov2d
-    x = keras.layers.Conv2D(num_filters//4, kernel_size=(3,3), strides=1,padding='same',
+    x = keras.layers.Conv2D(num_filters//4, kernel_size=(1,1), strides=1,padding='same',
                        kernel_initializer=keras.initializers.RandomNormal())(x)
     
     #//BN_relu

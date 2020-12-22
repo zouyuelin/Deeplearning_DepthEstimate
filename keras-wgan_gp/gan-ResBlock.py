@@ -18,7 +18,7 @@ import sys
 noise_dim = 128
 dim = 64
 epochs = 1000
-batch_size = 64
+batch_size = 32
 data_num = 12500
 learning_rate = 2e-4
 save_step = 300
@@ -73,6 +73,11 @@ def create_tfrecords():
         '''
             it is on my datasets, please change these codes! 
         '''
+        if 'cat' in index:
+            value = 0
+        else:
+            continue
+            
         example = tf.train.Example(features=tf.train.Features(feature={
                 'label': tf.train.Feature(int64_list=tf.train.Int64List(value=[value])),
                 'img_raw': tf.train.Feature(bytes_list=tf.train.BytesList(value=[img_raw]))
@@ -129,7 +134,7 @@ def dataset_tfrecords(tfrecords_path,use_keras_fit=True):
 #                            define resBlock                       |
 #-------------------------------------------------------------------   
     
-def convolutional2D(x,num_filters,kernel_size,resampling):
+def convolutional2D(x,num_filters,kernel_size,resampling,strides=2):
     if resampling is 'up':
         x = keras.layers.UpSampling2D()(x)
         x = keras.layers.Conv2D(num_filters, kernel_size=kernel_size, strides=1, padding='same',
@@ -137,12 +142,45 @@ def convolutional2D(x,num_filters,kernel_size,resampling):
         #x = keras.layers.Conv2DTranspose(num_filters,kernel_size=kernel_size, strides=2,  padding='same',
         #              kernel_initializer=keras.initializers.RandomNormal())(x)
     elif resampling is 'down':
-        x = keras.layers.Conv2D(num_filters, kernel_size=kernel_size, strides=2,  padding='same',
+        x = keras.layers.Conv2D(num_filters, kernel_size=kernel_size, strides=strides,  padding='same',
                        kernel_initializer=keras.initializers.RandomNormal())(x)
-
     return x
     
-def ResBlock(x, num_filters, resampling):
+def ResBlock(x, num_filters, resampling,strides=2):
+    #F1,F2,F3 = num_filters
+    X_shortcut = x
+    
+    #//up or down
+    x = convolutional2D(x,num_filters,kernel_size=(3,3),resampling=resampling,strides=strides)
+    
+    #//BN_relu
+    x = keras.layers.BatchNormalization(axis=3)(x)
+    x = keras.layers.Activation('relu')(x)
+
+    #//cov2d
+    x = keras.layers.Conv2D(num_filters, kernel_size=(3,3), strides=1,padding='same',
+                       kernel_initializer=keras.initializers.RandomNormal())(x)
+    
+    #//BN_relu
+    x = keras.layers.BatchNormalization(axis=3)(x)
+    x = keras.layers.Activation('relu')(x)
+    
+    #//cov2d
+    x = keras.layers.Conv2D(num_filters, kernel_size=(3,3), strides=1,padding='same',
+                       kernel_initializer=keras.initializers.RandomNormal())(x)
+    #//BN_relu
+    x = keras.layers.BatchNormalization(axis=3)(x)
+    
+    #//add_shortcut
+    X_shortcut = convolutional2D(X_shortcut,num_filters,kernel_size=(1,1),resampling=resampling,strides=strides)
+    X_shortcut = keras.layers.BatchNormalization(axis=3)(X_shortcut)
+    
+    X_add = keras.layers.Add()([x,X_shortcut])
+    X_add = keras.layers.Activation('relu')(X_add)
+    
+    return X_add
+
+def IdentifyBlock(x, num_filters):
     #F1,F2,F3 = num_filters
     X_shortcut = x
     
@@ -150,25 +188,24 @@ def ResBlock(x, num_filters, resampling):
     x = keras.layers.Conv2D(num_filters//4, kernel_size=(1,1), strides=1,padding='same',
                        kernel_initializer=keras.initializers.RandomNormal())(x)
     #//BN_relu
-    x = keras.layers.BatchNormalization(momentum=0.9, epsilon=1e-5)(x)
+    x = keras.layers.BatchNormalization(axis=3)(x)
     x = keras.layers.Activation('relu')(x)
     
-    #//up or down
-    x = convolutional2D(x,num_filters//4,kernel_size=(3,3),resampling=resampling)
+    #//cov2d
+    x = keras.layers.Conv2D(num_filters//4, kernel_size=(3,3), strides=1,padding='same',
+                       kernel_initializer=keras.initializers.RandomNormal())(x)
     
     #//BN_relu
-    x = keras.layers.BatchNormalization(momentum=0.9, epsilon=1e-5)(x)
+    x = keras.layers.BatchNormalization(axis=3)(x)
     x = keras.layers.Activation('relu')(x)
     
     #//cov2d
     x = keras.layers.Conv2D(num_filters, kernel_size=(1,1), strides=1,padding='same',
                        kernel_initializer=keras.initializers.RandomNormal())(x)
     #//BN_relu
-    x = keras.layers.BatchNormalization(momentum=0.9, epsilon=1e-5)(x)
+    x = keras.layers.BatchNormalization(axis=3)(x)
     
     #//add_shortcut
-    X_shortcut = convolutional2D(X_shortcut,num_filters,kernel_size=(1,1),resampling=resampling)
-    X_shortcut = keras.layers.BatchNormalization(momentum=0.9, epsilon=1e-5)(X_shortcut)
     
     X_add = keras.layers.Add()([x,X_shortcut])
     X_add = keras.layers.Activation('relu')(X_add)
@@ -185,22 +222,26 @@ def generate(resampling='up'):
     g = keras.layers.Dense(512*4*4)(nosie)
     g = keras.layers.Reshape((4,4,512))(g)
     #//BN_relu
-    g = keras.layers.BatchNormalization(momentum=0.9, epsilon=1e-5)(g)
+    g = keras.layers.BatchNormalization(axis=3)(g)
     g = keras.layers.Activation('relu')(g)
     
     #4*4*512
     g = ResBlock(g,num_filters=512,resampling=resampling)
+
     #8*8*512
     g = ResBlock(g,num_filters=256,resampling=resampling)
+
     #16*16*256
     g = ResBlock(g,num_filters=128,resampling=resampling)
+
     #32*32*128
     g = ResBlock(g,num_filters=64,resampling=resampling)
+
     #64*64*64
     
     g = keras.layers.Conv2D(3, kernel_size=(3,3), strides=1, padding='same',
                        kernel_initializer=keras.initializers.RandomNormal())(g)
-    #64*64*64
+    #64*64*3
     g_out = keras.layers.Activation('tanh')(g)
     g_model = keras.Model(nosie,g_out)
     return g_model
@@ -211,19 +252,25 @@ def generate(resampling='up'):
 
 def discriminator(resampling='down'):
     real_in = keras.layers.Input(shape=(dim, dim, 3))
+
     d = keras.layers.Conv2D(64, kernel_size=(3,3), padding='same',strides=1,
                       kernel_initializer=keras.initializers.RandomNormal())(real_in)
     #//BN_relu
-    d = keras.layers.BatchNormalization(momentum=0.9, epsilon=1e-5)(d)
+    d = keras.layers.BatchNormalization(axis=3)(d)
     d = keras.layers.Activation('relu')(d)
+
     #64*64*64
-    d = ResBlock(d,num_filters=128,resampling=resampling)         
+    d = ResBlock(d,num_filters=128,resampling=resampling)  
+    
     #32*32*128
     d = ResBlock(d,num_filters=256,resampling=resampling)
+
     #16*16*256
     d = ResBlock(d,num_filters=512,resampling=resampling)
+
     #8*8*512
     d = ResBlock(d,num_filters=512,resampling=resampling)
+    
     #4*4*512
     '''
         GlobalAveragePooling :it can replace the full connection layer
@@ -249,7 +296,7 @@ def plot(history):
     plt.xlabel('step')
     plt.legend(['d_loss','distance','g_loss'],loc='upper left')
     plt.savefig(os.path.join(model_path,'history.png'))
-    plt.pause(2)
+    plt.pause(1)
     plt.close()
     
 def main():

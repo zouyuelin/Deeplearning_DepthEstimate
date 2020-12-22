@@ -73,11 +73,6 @@ def create_tfrecords():
         '''
             it is on my datasets, please change these codes! 
         '''
-        if 'cat' in index:
-            value = 0
-        else:
-            continue
-            
         example = tf.train.Example(features=tf.train.Features(feature={
                 'label': tf.train.Feature(int64_list=tf.train.Int64List(value=[value])),
                 'img_raw': tf.train.Feature(bytes_list=tf.train.BytesList(value=[img_raw]))

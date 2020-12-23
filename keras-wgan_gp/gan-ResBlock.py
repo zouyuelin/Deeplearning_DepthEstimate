@@ -142,6 +142,15 @@ def convolutional2D(x,num_filters,kernel_size,resampling,strides=2):
     return x
     
 def ResBlock(x, num_filters, resampling,strides=2):
+    '''
+        1.如果训练的数据量较少，则需要将BN的参数momentum减少，减少到0.9甚至是0.8（默认0.99）
+        即 ： BatchNormalization(momentum=0.8)
+        训练数据大时可使用默认值0.99
+        
+        2.另外也可以使用keras.layers.LeakyReLU()函数来代替relu函数，使得负值段有一定梯度
+        可以通过设置alpha参数来改变负值段的斜率，alpha=0.2
+        relu的思想更接近于生物的神经元，卷积后relu处理会将数据映射到正值，负值段梯度为零
+    '''
     #F1,F2,F3 = num_filters
     X_shortcut = x
     

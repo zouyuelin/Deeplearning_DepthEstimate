@@ -158,29 +158,32 @@ def ResBlock(x, num_filters, resampling,strides=2):
     x = convolutional2D(x,num_filters,kernel_size=(3,3),resampling=resampling,strides=strides)
     
     #//BN_relu
-    x = keras.layers.BatchNormalization(axis=3)(x)
-    x = keras.layers.Activation('relu')(x)
+    x = keras.layers.BatchNormalization()(x)
+    #x = keras.layers.Activation('relu')(x)
+    x = keras.layers.LeakyReLU()(x)
 
     #//cov2d
     x = keras.layers.Conv2D(num_filters, kernel_size=(3,3), strides=1,padding='same',
-                       kernel_initializer=keras.initializers.RandomNormal())(x)
+                       kernel_initializer='he_normal')(x)
     
     #//BN_relu
-    x = keras.layers.BatchNormalization(axis=3)(x)
-    x = keras.layers.Activation('relu')(x)
+    x = keras.layers.BatchNormalization()(x)
+    #x = keras.layers.Activation('relu')(x)
+    x = keras.layers.LeakyReLU()(x)
     
     #//cov2d
     x = keras.layers.Conv2D(num_filters, kernel_size=(3,3), strides=1,padding='same',
-                       kernel_initializer=keras.initializers.RandomNormal())(x)
+                       kernel_initializer='he_normal')(x)
     #//BN_relu
-    x = keras.layers.BatchNormalization(axis=3)(x)
+    x = keras.layers.BatchNormalization()(x)
     
     #//add_shortcut
     X_shortcut = convolutional2D(X_shortcut,num_filters,kernel_size=(1,1),resampling=resampling,strides=strides)
-    X_shortcut = keras.layers.BatchNormalization(axis=3)(X_shortcut)
+    X_shortcut = keras.layers.BatchNormalization()(X_shortcut)
     
     X_add = keras.layers.Add()([x,X_shortcut])
-    X_add = keras.layers.Activation('relu')(X_add)
+    #X_add = keras.layers.Activation('relu')(X_add)
+    X_add = keras.layers.LeakyReLU()(X_add)
     
     return X_add
 
@@ -190,24 +193,24 @@ def IdentifyBlock(x, num_filters):
     
     #//cov2d
     x = keras.layers.Conv2D(num_filters//4, kernel_size=(1,1), strides=1,padding='same',
-                       kernel_initializer=keras.initializers.RandomNormal())(x)
+                       kernel_initializer='he_normal')(x)
     #//BN_relu
-    x = keras.layers.BatchNormalization(axis=3)(x)
+    x = keras.layers.BatchNormalization()(x)
     x = keras.layers.Activation('relu')(x)
     
     #//cov2d
-    x = keras.layers.Conv2D(num_filters//4, kernel_size=(1,1), strides=1,padding='same',
-                       kernel_initializer=keras.initializers.RandomNormal())(x)
+    x = keras.layers.Conv2D(num_filters//4, kernel_size=(3,3), strides=1,padding='same',
+                       kernel_initializer='he_normal')(x)
     
     #//BN_relu
-    x = keras.layers.BatchNormalization(axis=3)(x)
+    x = keras.layers.BatchNormalization()(x)
     x = keras.layers.Activation('relu')(x)
     
     #//cov2d
     x = keras.layers.Conv2D(num_filters, kernel_size=(1,1), strides=1,padding='same',
-                       kernel_initializer=keras.initializers.RandomNormal())(x)
+                       kernel_initializer='he_normal')(x)
     #//BN_relu
-    x = keras.layers.BatchNormalization(axis=3)(x)
+    x = keras.layers.BatchNormalization()(x)
     
     #//add_shortcut
     
@@ -226,8 +229,9 @@ def generate(resampling='up'):
     g = keras.layers.Dense(512*4*4)(nosie)
     g = keras.layers.Reshape((4,4,512))(g)
     #//BN_relu
-    g = keras.layers.BatchNormalization(axis=3)(g)
-    g = keras.layers.Activation('relu')(g)
+    g = keras.layers.BatchNormalization()(g)
+    #g = keras.layers.Activation('relu')(g)
+    g = keras.layers.LeakyReLU()(g)
     
     #4*4*512
     g = ResBlock(g,num_filters=512,resampling=resampling)
@@ -244,7 +248,7 @@ def generate(resampling='up'):
     #64*64*64
     
     g = keras.layers.Conv2D(3, kernel_size=(3,3), strides=1, padding='same',
-                       kernel_initializer=keras.initializers.RandomNormal())(g)
+                       kernel_initializer='he_normal')(g)
     #64*64*3
     g_out = keras.layers.Activation('tanh')(g)
     g_model = keras.Model(nosie,g_out)
@@ -258,10 +262,11 @@ def discriminator(resampling='down'):
     real_in = keras.layers.Input(shape=(dim, dim, 3))
 
     d = keras.layers.Conv2D(64, kernel_size=(3,3), padding='same',strides=1,
-                      kernel_initializer=keras.initializers.RandomNormal())(real_in)
+                      kernel_initializer='he_normal')(real_in)
     #//BN_relu
-    d = keras.layers.BatchNormalization(axis=3)(d)
-    d = keras.layers.Activation('relu')(d)
+    d = keras.layers.BatchNormalization()(d)
+    #d = keras.layers.Activation('relu')(d)
+    d = keras.layers.LeakyReLU()(d)
 
     #64*64*64
     d = ResBlock(d,num_filters=128,resampling=resampling)  
@@ -281,7 +286,7 @@ def discriminator(resampling='down'):
         you can use the Dense to test the network
     '''
     d = keras.layers.GlobalAveragePooling2D()(d)
-    d_out = keras.layers.Dense(1,use_bias = False)(d)
+    d_out = keras.layers.Dense(1)(d)
     d_model = keras.Model(real_in,d_out)
     return d_model
 

@@ -1,1 +1,2 @@
-# Deeplearning_DepthEstimate
+运行方法：
+python gan.py --data [image path] --type ['gp' or 'div']

@@ -17,7 +17,7 @@ import sys
 
 noise_dim = 128
 dim = 64
-epochs = 1000
+epochs = 400
 batch_size = 32
 data_num = 12500
 learning_rate = 2e-4

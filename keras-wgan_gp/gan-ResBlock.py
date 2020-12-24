@@ -461,7 +461,7 @@ def main():
     
     #the loop body
     #\\
-    for step in range(last_iter+1,int(last_iter+1+epochs*data_num/batch_size+1)):
+    for step in range(last_iter+1,int(epochs*data_num/batch_size+1)):
         try:
             #get the time
             start_time = time.time()

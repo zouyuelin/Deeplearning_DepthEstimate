@@ -23,6 +23,8 @@ batch_size = 32
 epochs = 4
 num_steps = 2000
 coding_size = 30
+g_learning_rate = 0.005
+d_learning_rate = 0.0001
 tfrecords_path = 'data/train.tfrecords'
 
 #--------------------------------------datasetTfrecord----------------   
@@ -160,11 +162,17 @@ def training_keras():
             ])
     #gans network        
     gan = keras.models.Sequential([generator,discriminator])
+
+    #set the optimizer
+    optimizer_g = keras.optimizers.RMSprop(lr=g_learning_rate)
+    optimizer_d = keras.optimizers.RMSprop(lr=d_learning_rate)
+    #optimizer_g = keras.optimizers.Adam(lr=g_learning_rate)
+    #optimizer_d = keras.optimizers.Adam(lr=d_learning_rate)
     
     #compile the net
-    discriminator.compile(loss="binary_crossentropy",optimizer='rmsprop')# metrics=['accuracy'])
+    discriminator.compile(loss="binary_crossentropy",optimizer=optimizer_d)# metrics=['accuracy'])
     discriminator.trainable=False
-    gan.compile(loss="binary_crossentropy",optimizer='rmsprop')# metrics=['accuracy'])
+    gan.compile(loss="binary_crossentropy",optimizer=optimizer_g)# metrics=['accuracy'])
     
     #dataset
     #train_datas = read_and_decode(tfrecords_path)
